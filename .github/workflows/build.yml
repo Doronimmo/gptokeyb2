@@ -40,7 +40,7 @@ jobs:
           submodules: recursive
 
       - name: Build ${{ matrix.arch.name }}
-        run: make -f Makefile.gmloader ARCH=${{ matrix.arch.cross }} LLVM_FILE=/usr/lib/llvm-11/lib/libclang-11.so LLVM_INC=/usr/${{ matrix.arch.cross }}/include/c++/10/${{ matrix.arch.cross }} -j$(nproc)
+        run: make -f Makefile.gptokeyb2 ARCH=${{ matrix.arch.cross }} LLVM_FILE=/usr/lib/llvm-11/lib/libclang-11.so LLVM_INC=/usr/${{ matrix.arch.cross }}/include/c++/10/${{ matrix.arch.cross }} -j$(nproc)
         
       - name: Prepare export
         run: |
