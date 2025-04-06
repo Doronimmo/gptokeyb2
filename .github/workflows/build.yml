@@ -33,17 +33,7 @@ jobs:
         run: |
           dpkg --add-architecture ${{ matrix.arch.name }}
           apt update
-          apt install -y --no-install-recommends \
-            python3 \
-            git \
-            build-essential \
-            patchelf \
-            linux-libc-dev-${{ matrix.arch.name }}-cross \
-            gcc-${{ matrix.arch.cross }} \
-            libsdl2-dev:${{ matrix.arch.name }} \
-            libevdev-dev:${{ matrix.arch.name }} \
-            ninja-build \
-            cmake
+          apt install -y --no-install-recommends python3 git build-essential patchelf linux-libc-dev-${{ matrix.arch.name }}-cross gcc-${{ matrix.arch.cross }} libsdl2-dev:${{ matrix.arch.name }} libevdev-dev:${{ matrix.arch.name }} ca-certificates cmake ninja-build
 
       - uses: actions/checkout@v4
         with:
@@ -56,17 +46,9 @@ jobs:
           cmake --build .
         
       - name: Prepare export
-        env:
-          PKG_CONFIG_PATH: /usr/lib/${{ matrix.arch.cross }}/pkgconfig
-          CFLAGS: "-I/usr/include/${{ matrix.arch.cross }}"
-          LDFLAGS: "-L/usr/lib/${{ matrix.arch.cross }}"
         run: |
-          mkdir build && cd build
-          cmake ../ \
-            GNinja \
-            -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchains/debian-${{ matrix.arch.name }}-gcc-toolchain.cmake \
-            -DCMAKE_BUILD_TYPE=Release
-          cmake --build .
+          cd build
+          patchelf --replace-needed libinterpose.so libinterpose.${{ matrix.arch.executable }}.so gptokeyb2
           patchelf --set-soname libinterpose.${{ matrix.arch.executable }}.so lib/libinterpose.so
           mv lib/libinterpose.so libinterpose.${{ matrix.arch.executable }}.so
           /usr/${{ matrix.arch.cross }}/bin/strip gptokeyb2
@@ -78,4 +60,3 @@ jobs:
           name: gptokeyb2_${{ matrix.arch.name }}
           path: |
             ${{ github.workspace }}/build/*.${{ matrix.arch.executable }}*
-
