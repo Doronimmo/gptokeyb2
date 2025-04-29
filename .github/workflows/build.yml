@@ -16,7 +16,6 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: debian:bullseye
-      options: --privileged
     name: Debian ${{ matrix.arch.name }}
     strategy:
       fail-fast: false
@@ -25,29 +24,16 @@ jobs:
           - name: arm64
             cross: aarch64-linux-gnu
             executable: aarch64
-            triplet: aarch64-linux-gnu
           - name: armhf
             cross: arm-linux-gnueabihf
             executable: armhf
-            triplet: arm-linux-gnueabihf
 
     steps:
-      - name: Install base dependencies
-        run: |
-          apt update
-          apt install -y --no-install-recommends python3 git build-essential patchelf ca-certificates cmake ninja-build wget gnupg
-
-      - name: Setup cross-compilation environment
+      - name: Install ${{ matrix.arch.name }} dependencies
         run: |
           dpkg --add-architecture ${{ matrix.arch.name }}
-          echo "deb http://deb.debian.org/debian bullseye main" > /etc/apt/sources.list
-          echo "deb http://deb.debian.org/debian-security bullseye-security main" >> /etc/apt/sources.list
-          echo "deb http://deb.debian.org/debian bullseye-updates main" >> /etc/apt/sources.list
           apt update
-          apt install -y --no-install-recommends \
-            crossbuild-essential-${{ matrix.arch.name }} \
-            libsdl2-dev:${{ matrix.arch.name }} \
-            libevdev-dev:${{ matrix.arch.name }}
+          apt install -y --no-install-recommends python3 git build-essential patchelf linux-libc-dev-${{ matrix.arch.name }}-cross gcc-${{ matrix.arch.cross }} libsdl2-dev:${{ matrix.arch.name }} libevdev-dev:${{ matrix.arch.name }} ca-certificates cmake ninja-build
 
       - uses: actions/checkout@v4
         with:
@@ -55,14 +41,10 @@ jobs:
 
       - name: Build ${{ matrix.arch.name }}
         run: |
-          mkdir build && cd build
+          mkdir -p build && cd build
           cmake .. -GNinja \
             -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchains/debian-${{ matrix.arch.name }}-gcc-toolchain.cmake \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_SYSTEM_NAME=Linux \
-            -DCMAKE_SYSTEM_PROCESSOR=${{ matrix.arch.cross }} \
-            -DCMAKE_C_COMPILER=${{ matrix.arch.triplet }}-gcc \
-            -DCMAKE_CXX_COMPILER=${{ matrix.arch.triplet }}-g++
+            -DCMAKE_BUILD_TYPE=Release
           ninja
         
       - name: Prepare export
@@ -71,7 +53,7 @@ jobs:
           patchelf --replace-needed libinterpose.so libinterpose.${{ matrix.arch.executable }}.so gptokeyb2
           patchelf --set-soname libinterpose.${{ matrix.arch.executable }}.so lib/libinterpose.so
           mv lib/libinterpose.so libinterpose.${{ matrix.arch.executable }}.so
-          ${{ matrix.arch.triplet }}-strip gptokeyb2
+          ${{ matrix.arch.cross }}-strip gptokeyb2
           mv gptokeyb2 gptokeyb2.${{ matrix.arch.executable }}
 
       - name: Upload Artifacts
