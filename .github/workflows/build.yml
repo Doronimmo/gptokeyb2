@@ -45,7 +45,9 @@ jobs:
             linux-libc-dev-${{ matrix.arch.name }}-cross \
             pkg-config \
             libsdl2-dev:${{ matrix.arch.name }} \
+            libevdev2:${{ matrix.arch.name }} \
             libevdev-dev:${{ matrix.arch.name }} \
+            libevdev-dev \
             binutils-${{ matrix.arch.cross }}
 
       - uses: actions/checkout@v4
@@ -55,8 +57,8 @@ jobs:
       - name: Build ${{ matrix.arch.name }}
         run: |
           mkdir -p build && cd build
-          PKG_CONFIG_PATH=/usr/lib/${{ matrix.arch.cross }}/pkgconfig \
-          PKG_CONFIG_SYSROOT_DIR=/ \
+          PKG_CONFIG_PATH=/usr/lib/${{ matrix.arch.cross }}/pkgconfig:/usr/lib/pkgconfig \
+          PKG_CONFIG_SYSROOT_DIR=/usr/lib/${{ matrix.arch.cross }} \
           cmake .. -GNinja \
             -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchains/debian-${{ matrix.arch.name }}-gcc-toolchain.cmake \
             -DCMAKE_BUILD_TYPE=Release \
