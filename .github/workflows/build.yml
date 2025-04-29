@@ -33,7 +33,20 @@ jobs:
         run: |
           dpkg --add-architecture ${{ matrix.arch.name }}
           apt update
-          apt install -y --no-install-recommends python3 git build-essential patchelf linux-libc-dev-${{ matrix.arch.name }}-cross gcc-${{ matrix.arch.cross }} libsdl2-dev:${{ matrix.arch.name }} libevdev-dev:${{ matrix.arch.name }} ca-certificates cmake ninja-build
+          apt install -y --no-install-recommends \
+            python3 \
+            git \
+            build-essential \
+            patchelf \
+            ca-certificates \
+            cmake \
+            ninja-build \
+            gcc-${{ matrix.arch.cross }} \
+            linux-libc-dev-${{ matrix.arch.name }}-cross \
+            pkg-config \
+            libsdl2-dev:${{ matrix.arch.name }} \
+            libevdev-dev:${{ matrix.arch.name }} \
+            binutils-${{ matrix.arch.cross }}
 
       - uses: actions/checkout@v4
         with:
@@ -42,9 +55,13 @@ jobs:
       - name: Build ${{ matrix.arch.name }}
         run: |
           mkdir -p build && cd build
+          PKG_CONFIG_PATH=/usr/lib/${{ matrix.arch.cross }}/pkgconfig \
+          PKG_CONFIG_SYSROOT_DIR=/ \
           cmake .. -GNinja \
             -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchains/debian-${{ matrix.arch.name }}-gcc-toolchain.cmake \
-            -DCMAKE_BUILD_TYPE=Release
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_FIND_ROOT_PATH=/usr/${{ matrix.arch.cross }} \
+            -DCMAKE_LIBRARY_PATH=/usr/lib/${{ matrix.arch.cross }}
           ninja
         
       - name: Prepare export
